@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+.grdnt{
+    @apply bg-gradient-to-tr from-red-400 to-purple-400 via-pink-600
+}
+
+.glass{
+    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-lg;
+}
+
+.gradient{
+    @apply bg-gradient-to-r from-blue-400 via-cyan-700 to-indigo-800;
+}
+
+
+
