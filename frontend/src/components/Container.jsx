@@ -14,10 +14,11 @@ const Container = () => {
 
     const handlePredict = async () => {
         try {
-            const res = await axios.post("http://localhost:8000/predict", { text });
+            const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+            const res = await axios.post(`${apiUrl}/predict`, { text });
             const label = res.data.prediction;
             const prob = (res.data.probability * 100).toFixed(2);
-            setResult(`Prediction: ${label}(${prob} %)`);
+            setResult(`Prediction: ${label} (${prob}%)`);
         } catch (error) {
             setResult("Error connecting to server.");
             console.error(error);

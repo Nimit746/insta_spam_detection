@@ -9,6 +9,9 @@ import pickle
 import re
 import pymongo
 from datetime import datetime
+from keras.models import load_model
+from pathlib import Path
+import os
 
 # Download required NLTK data
 nltk.download("stopwords")
@@ -23,10 +26,14 @@ collection = db["predictions"]
 app = FastAPI()
 
 # ========== Load LSTM Model ==========
-model = load_model("backend/model/spam_lstm_model.h5")
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_DIR = BASE_DIR / "model"
+MODEL_PATH = MODEL_DIR / "spam_lstm_model.h5"
+model = load_model(str(MODEL_PATH))
 
 # ========== Load Tokenizer ==========
-with open("backend/model/tokenizer.pkl", "rb") as f:
+TOKENIZER_PATH = MODEL_DIR / "tokenizer.pkl"
+with open(TOKENIZER_PATH, "rb") as f:
     tokenizer = pickle.load(f)
 
 # ========== Text Preprocessing ==========
