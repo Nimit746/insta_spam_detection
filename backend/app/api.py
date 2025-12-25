@@ -9,27 +9,49 @@ import pickle
 import re
 import pymongo
 from datetime import datetime
-from keras.models import load_model
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
-
-
 
 # Download required NLTK data
 nltk.download("stopwords")
 nltk.download("wordnet")
 
-# ========== MongoDB Setup ==========
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
-client = pymongo.MongoClient(MONGODB_URI)
-db = client["insta_spam_db"]
-collection = db["predictions"]
+# ========== MongoDB Setup (Optional) ==========
+try:
+    MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
+    client = pymongo.MongoClient(
+        MONGODB_URI, 
+        serverSelectionTimeoutMS=5000,
+        connectTimeoutMS=5000
+    )
+    # Test connection
+    client.server_info()
+    db = client["insta_spam_db"]
+    collection = db["predictions"]
+    MONGODB_AVAILABLE = True
+    print("✓ MongoDB connected successfully")
+except Exception as e:
+    print(f"⚠ MongoDB not available: {e}")
+    print("⚠ API will work without database logging")
+    MONGODB_AVAILABLE = False
+    collection = None
 
 # ========== App Setup ==========
 app = FastAPI()
+
+# ========== CORS Setup ==========
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ========== Load LSTM Model ==========
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,7 +79,14 @@ def preprocess_text(text):
 class CommentInput(BaseModel):
     text: str
 
-# ========== API Route ==========
+# ========== API Routes ==========
+@app.get("/")
+def root():
+    return {
+        "status": "running",
+        "mongodb_connected": MONGODB_AVAILABLE
+    }
+
 @app.post("/predict")
 def predict_spam(data: CommentInput):
     raw_text = data.text
@@ -71,15 +100,19 @@ def predict_spam(data: CommentInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
-    # Save to MongoDB
-    record = {
-        "input": raw_text,
-        "cleaned": cleaned_text,
-        "prediction": label,
-        "probability": float(prediction),
-        "timestamp": datetime.utcnow()
-    }
-    collection.insert_one(record)
+    # Save to MongoDB only if available
+    if MONGODB_AVAILABLE and collection is not None:
+        try:
+            record = {
+                "input": raw_text,
+                "cleaned": cleaned_text,
+                "prediction": label,
+                "probability": float(prediction),
+                "timestamp": datetime.utcnow()
+            }
+            collection.insert_one(record)
+        except Exception as e:
+            print(f"Failed to save to MongoDB: {e}")
 
     return {
         "input": raw_text,
@@ -87,16 +120,3 @@ def predict_spam(data: CommentInput):
         "prediction": label,
         "probability": float(prediction)
     }
-from fastapi.middleware.cors import CORSMiddleware
-
-
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,  # Use the variable instead of hardcoded value
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
