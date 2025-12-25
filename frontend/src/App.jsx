@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useState } from "react";
-import Container from "./components/container";
+import Container from "./components/Container";
 import Navbar from "./components/Navbar";
 import './App.css'
 import Section from "./components/Section";
