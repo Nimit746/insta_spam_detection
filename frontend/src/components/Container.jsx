@@ -12,8 +12,9 @@ const Container = () => {
 
 
     const handlePredict = async () => {
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+        console.log("API URL:", apiUrl);  // Add this line
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
             const res = await axios.post(`${apiUrl}/predict`, { text });
             const label = res.data.prediction;
             const prob = (res.data.probability * 100).toFixed(2);
