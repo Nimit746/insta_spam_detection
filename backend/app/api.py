@@ -11,7 +11,12 @@ import pymongo
 from datetime import datetime
 from keras.models import load_model
 from pathlib import Path
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
+
+
 
 # Download required NLTK data
 nltk.download("stopwords")
@@ -83,9 +88,13 @@ def predict_spam(data: CommentInput):
     }
 from fastapi.middleware.cors import CORSMiddleware
 
+
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite's default dev server port
+    allow_origins=allowed_origins,  # Use the variable instead of hardcoded value
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
