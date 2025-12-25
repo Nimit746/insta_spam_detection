@@ -23,7 +23,8 @@ nltk.download("stopwords")
 nltk.download("wordnet")
 
 # ========== MongoDB Setup ==========
-client = pymongo.MongoClient("mongodb://localhost:27017/")
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
+client = pymongo.MongoClient(MONGODB_URI)
 db = client["insta_spam_db"]
 collection = db["predictions"]
 
